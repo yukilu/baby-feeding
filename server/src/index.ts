@@ -4,7 +4,7 @@ import db from './db';
 import type { Record, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
 
 const app = express();
-const PORT = 4000;
+const PORT = 4001;
 
 app.use(cors());
 app.use(express.json());
@@ -97,6 +97,11 @@ app.post('/api/records', (req, res) => {
   if (!type) {
     return res.status(400).json({ error: '类型不能为空' });
   }
+  
+  // 奶量是奶粉和母乳的必填字段
+  if ((type === 'formula' || type === 'breastmilk') && !amount) {
+    return res.status(400).json({ error: '奶量不能为空' });
+  }
 
   const stmt = db.prepare(`
     INSERT INTO records (type, amount, duration, note)
@@ -113,6 +118,18 @@ app.post('/api/records', (req, res) => {
 app.put('/api/records/:id', (req, res) => {
   const { id } = req.params;
   const { amount, duration, note } = req.body as Partial<CreateRecordInput>;
+  
+  // 先获取当前记录的类型
+  const currentRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record;
+  
+  if (!currentRecord) {
+    return res.status(404).json({ error: '记录不存在' });
+  }
+  
+  // 奶量是奶粉和母乳的必填字段
+  if ((currentRecord.type === 'formula' || currentRecord.type === 'breastmilk') && !amount) {
+    return res.status(400).json({ error: '奶量不能为空' });
+  }
   
   const stmt = db.prepare(`
     UPDATE records

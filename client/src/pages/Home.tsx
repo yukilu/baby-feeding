@@ -99,7 +99,7 @@ export default function Home() {
                   className="bg-gray-50 rounded-xl p-4 border border-gray-100 cursor-pointer hover:border-purple-300 hover:bg-gray-100 transition"
                 >
                   {/* 时间 */}
-                  <div className="text-xs text-gray-500 mb-2">{formatDate(record.createdAt)}</div>
+                  <div className="text-sm text-gray-500 mb-2">{formatDate(record.createdAt)}</div>
                   
                   {/* 主内容 */}
                   <div className="flex justify-between items-center">

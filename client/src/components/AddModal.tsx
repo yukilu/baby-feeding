@@ -125,6 +125,7 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="请输入奶量"
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
