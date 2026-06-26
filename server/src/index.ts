@@ -92,7 +92,7 @@ app.get('/api/stats', (req, res) => {
 
 // 创建新记录
 app.post('/api/records', (req, res) => {
-  const { type, amount, duration, note } = req.body as CreateRecordInput;
+  const { type, amount, duration, note, createdAt } = req.body as CreateRecordInput;
   
   if (!type) {
     return res.status(400).json({ error: '类型不能为空' });
@@ -104,11 +104,11 @@ app.post('/api/records', (req, res) => {
   }
 
   const stmt = db.prepare(`
-    INSERT INTO records (type, amount, duration, note)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO records (type, amount, duration, note, createdAt)
+    VALUES (?, ?, ?, ?, ?)
   `);
   
-  const result = stmt.run(type, amount || null, duration || null, note || null);
+  const result = stmt.run(type, amount || null, duration || null, note || null, createdAt || null);
   const newRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(result.lastInsertRowid) as Record;
   
   res.json(newRecord);
@@ -117,7 +117,7 @@ app.post('/api/records', (req, res) => {
 // 更新记录
 app.put('/api/records/:id', (req, res) => {
   const { id } = req.params;
-  const { amount, duration, note } = req.body as Partial<CreateRecordInput>;
+  const { amount, duration, note, createdAt } = req.body as Partial<CreateRecordInput>;
   
   // 先获取当前记录的类型
   const currentRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record;
@@ -133,11 +133,11 @@ app.put('/api/records/:id', (req, res) => {
   
   const stmt = db.prepare(`
     UPDATE records
-    SET amount = ?, duration = ?, note = ?
+    SET amount = ?, duration = ?, note = ?, createdAt = ?
     WHERE id = ?
   `);
   
-  stmt.run(amount || null, duration || null, note || null, id);
+  stmt.run(amount || null, duration || null, note || null, createdAt || currentRecord.createdAt, id);
   const updatedRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record;
   
   res.json(updatedRecord);

@@ -14,6 +14,7 @@ export interface CreateRecordInput {
   amount?: number;
   duration?: number;
   note?: string;
+  createdAt?: string;
 }
 
 export interface PaginatedResponse<T> {

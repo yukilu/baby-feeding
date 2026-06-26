@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import type { Record, RecordType } from '../types'
@@ -17,8 +17,7 @@ const formatDate = (dateStr: string) => {
   const day = String(date.getDate()).padStart(2, '0')
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
-  const second = String(date.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
 export default function Home() {
@@ -27,6 +26,11 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState<Record | undefined>()
+  const [refreshing, setRefreshing] = useState(false)
+  const [pullDistance, setPullDistance] = useState(0)
+  const touchStartY = useRef(0)
+  const isPulling = useRef(false)
+  const pullDistanceRef = useRef(0)
 
   const loadRecords = async (currentPage: number = 1) => {
     const response = await api.getRecords(currentPage)
@@ -63,10 +67,69 @@ export default function Home() {
     setShowModal(true)
   }
 
+  // 使用原生事件处理下拉刷新（兼容微信浏览器）
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.scrollY === 0) {
+        touchStartY.current = e.touches[0].clientY
+        isPulling.current = true
+      } else {
+        isPulling.current = false
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isPulling.current) return
+      const distance = e.touches[0].clientY - touchStartY.current
+      if (distance > 0) {
+        e.preventDefault()
+        const newDistance = Math.min(distance * 0.5, 80)
+        pullDistanceRef.current = newDistance
+        setPullDistance(newDistance)
+      }
+    }
+
+    const handleTouchEnd = async () => {
+      if (!isPulling.current) return
+      isPulling.current = false
+      if (pullDistanceRef.current > 50) {
+        setRefreshing(true)
+        setPullDistance(0)
+        pullDistanceRef.current = 0
+        await loadRecords(1)
+        setPage(1)
+        setRefreshing(false)
+      } else {
+        setPullDistance(0)
+        pullDistanceRef.current = 0
+      }
+    }
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: false })
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd, { passive: false })
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [])
+
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white pb-20">
-      {/* 头部 */}
-      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4">
+    <div className="max-w-md mx-auto min-h-screen bg-white">
+      {/* 下拉刷新提示 */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex justify-center items-center text-gray-500 text-sm"
+          style={{ height: refreshing ? 40 : pullDistance }}
+        >
+          {refreshing ? '刷新中...' : pullDistance > 50 ? '释放刷新' : '下拉刷新'}
+        </div>
+      )}
+
+      {/* 头部 - 固定吸顶 */}
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 shadow-md">
         <div className="grid grid-cols-2 gap-2">
           <Link
             to="/stats"

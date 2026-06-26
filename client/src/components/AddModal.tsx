@@ -14,12 +14,34 @@ interface AddModalProps {
   onRecordUpdated: () => void
 }
 
+// 将数据库时间格式 "YYYY-MM-DD HH:MM:SS" 转为 datetime-local 所需格式 "YYYY-MM-DDTHH:MM"
+const toDateTimeLocal = (dateStr: string) => {
+  return dateStr.replace(' ', 'T').slice(0, 16)
+}
+
+// 将 datetime-local 格式 "YYYY-MM-DDTHH:MM" 转为数据库格式 "YYYY-MM-DD HH:MM:SS"
+const toDbFormat = (dateStr: string) => {
+  return dateStr.replace('T', ' ') + ':00'
+}
+
+// 获取当前东八区时间的 datetime-local 格式
+const getNowDateTimeLocal = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hour = String(now.getHours()).padStart(2, '0')
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
 export default function AddModal({ record, onClose, onRecordUpdated }: AddModalProps) {
   const isEdit = !!record
   const [selectedType, setSelectedType] = useState<RecordType>(record?.type || 'breastmilk')
   const [amount, setAmount] = useState(record?.amount?.toString() || '')
   const [duration, setDuration] = useState(record?.duration?.toString() || '')
   const [note, setNote] = useState(record?.note || '')
+  const [createdAt, setCreatedAt] = useState(record?.createdAt ? toDateTimeLocal(record.createdAt) : getNowDateTimeLocal())
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -33,6 +55,7 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
           amount: amount ? parseInt(amount) : undefined,
           duration: duration ? parseInt(duration) : undefined,
           note: note || undefined,
+          createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
       } else {
         await api.createRecord({
@@ -40,6 +63,7 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
           amount: amount ? parseInt(amount) : undefined,
           duration: duration ? parseInt(duration) : undefined,
           note: note || undefined,
+          createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
       }
       onRecordUpdated()
@@ -80,14 +104,16 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
 
         {/* 类型选择 - 仅添加时可编辑 */}
         <div className="p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">选择类型</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {(Object.entries(typeLabels) as [RecordType, string][]).map(([type, label]) => (
+          <div className={`grid gap-2 ${isEdit ? 'grid-cols-3' : 'grid-cols-3'}`}>
+            {(isEdit
+              ? (Object.entries(typeLabels) as [RecordType, string][]).filter(([type]) => type === selectedType)
+              : Object.entries(typeLabels) as [RecordType, string][]
+            ).map(([type, label]) => (
               <button
                 key={type}
                 onClick={() => !isEdit && setSelectedType(type)}
                 disabled={isEdit}
-                className={`p-3 rounded-lg border-2 text-center transition ${
+                className={`p-3 rounded-lg border-2 text-center transition ${isEdit ? 'col-start-2' : ''} ${
                   selectedType === type
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-200 hover:border-gray-300'
@@ -103,52 +129,62 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
         {/* 表单 */}
         {selectedType && (
           <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100">
+            <div className="flex items-center mb-3">
+              <label className="text-xs font-medium text-gray-700 shrink-0">时间：</label>
+              <input
+                type="datetime-local"
+                value={createdAt}
+                onChange={(e) => setCreatedAt(e.target.value)}
+                required
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
             {selectedType === 'formula' && (
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1">奶量 (mL)</label>
+              <div className="flex items-center mb-3">
+                <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="请输入奶量"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
             )}
             {selectedType === 'breastmilk' && (
               <>
-                <div className="mb-3">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">奶量 (mL)</label>
+                <div className="flex items-center mb-3">
+                  <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="请输入奶量"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">时长 (分钟)</label>
+                <div className="flex items-center mb-3">
+                  <label className="text-xs font-medium text-gray-700 shrink-0">时长：</label>
                   <input
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                     placeholder="请输入时长"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
               </>
             )}
-            <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-700 mb-1">备注</label>
+            <div className="flex items-center mb-4">
+              <label className="text-xs font-medium text-gray-700 shrink-0">备注：</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="可选备注"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
             
