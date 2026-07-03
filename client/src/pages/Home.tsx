@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
-import type { Record, RecordType } from '../types'
+import type { FeedingRecord, RecordType } from '../types'
 import AddModal from '../components/AddModal'
 
 const typeLabels: Record<RecordType, string> = {
   breastmilk: '🤱 母乳',
   formula: '🍼 奶粉',
+  pee: '💧 尿尿',
   poop: '💩 大便',
 }
 
@@ -21,11 +22,11 @@ const formatDate = (dateStr: string) => {
 }
 
 export default function Home() {
-  const [records, setRecords] = useState<Record[]>([])
+  const [records, setRecords] = useState<FeedingRecord[]>([])
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [showModal, setShowModal] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Record | undefined>()
+  const [editingRecord, setEditingRecord] = useState<FeedingRecord | undefined>()
   const [refreshing, setRefreshing] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
   const touchStartY = useRef(0)
@@ -62,7 +63,7 @@ export default function Home() {
     setShowModal(true)
   }
 
-  const handleEdit = (record: Record) => {
+  const handleEdit = (record: FeedingRecord) => {
     setEditingRecord(record)
     setShowModal(true)
   }

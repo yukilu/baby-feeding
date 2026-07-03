@@ -1,6 +1,6 @@
 export type RecordType = 'formula' | 'breastmilk' | 'pee' | 'poop';
 
-export interface Record {
+export interface FeedingRecord {
   id: number;
   type: RecordType;
   amount?: number;

@@ -1,9 +1,9 @@
-import type { Record, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
+import type { FeedingRecord, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
 
 const API_BASE = '/api';
 
 export const api = {
-  async getRecords(page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Record>> {
+  async getRecords(page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<FeedingRecord>> {
     const res = await fetch(`${API_BASE}/records?page=${page}&pageSize=${pageSize}`);
     return res.json();
   },
@@ -13,7 +13,7 @@ export const api = {
     return res.json();
   },
 
-  async createRecord(input: CreateRecordInput): Promise<Record> {
+  async createRecord(input: CreateRecordInput): Promise<FeedingRecord> {
     const res = await fetch(`${API_BASE}/records`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,7 +28,7 @@ export const api = {
     });
   },
 
-  async updateRecord(id: number, input: Partial<CreateRecordInput>): Promise<Record> {
+  async updateRecord(id: number, input: Partial<CreateRecordInput>): Promise<FeedingRecord> {
     const res = await fetch(`${API_BASE}/records/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

@@ -4,7 +4,7 @@ import db from './db';
 import type { Record, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
 
 const app = express();
-const PORT = 4001;
+const PORT = parseInt(process.env.PORT || '4001', 10);
 
 app.use(cors());
 app.use(express.json());

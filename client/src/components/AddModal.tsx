@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { api } from '../api'
-import type { Record, RecordType } from '../types'
+import type { FeedingRecord, RecordType } from '../types'
 
 const typeLabels: Record<RecordType, string> = {
   breastmilk: '🤱 母乳',
   formula: '🍼 奶粉',
+  pee: '💧 尿尿',
   poop: '💩 大便',
 }
 
 interface AddModalProps {
-  record?: Record
+  record?: FeedingRecord
   onClose: () => void
   onRecordUpdated: () => void
 }
