@@ -63,18 +63,22 @@ export default function Stats() {
               {stats.map(stat => (
                 <div key={stat.date} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <h3 className="font-semibold text-gray-800 mb-3">{formatDate(stat.date)}</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-orange-50 rounded-lg p-3 text-center">
-                      <div className="inline-block w-9 text-2xl mb-1">🍼</div>
-                      <div className="text-lg font-bold text-orange-600">{stat.formulaAmount}mL</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="bg-orange-50 rounded-lg p-2 text-center">
+                      <div className="text-base mb-0.5">🍼</div>
+                      <div className="text-sm font-bold text-orange-600">{stat.formulaAmount}mL</div>
                     </div>
-                    <div className="bg-pink-50 rounded-lg p-3 text-center">
-                      <div className="inline-block w-9 text-2xl mb-1">🤱</div>
-                      <div className="text-lg font-bold text-pink-600">{stat.breastmilkAmount}mL</div>
+                    <div className="bg-pink-50 rounded-lg p-2 text-center">
+                      <div className="text-base mb-0.5">🤱</div>
+                      <div className="text-sm font-bold text-pink-600">{stat.breastmilkAmount}mL</div>
                     </div>
-                    <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                      <div className="inline-block w-9 text-2xl mb-1">💩</div>
-                      <div className="text-lg font-bold text-yellow-700">{stat.poopCount}次</div>
+                    <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                      <div className="text-base mb-0.5">💩</div>
+                      <div className="text-sm font-bold text-yellow-700">{stat.poopCount}次</div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-2 text-center">
+                      <div className="text-base mb-0.5">🧷</div>
+                      <div className="text-sm font-bold text-green-600">{stat.diaperCount}片</div>
                     </div>
                   </div>
                 </div>

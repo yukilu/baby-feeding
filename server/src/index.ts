@@ -1,13 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import db from './db';
 import type { Record, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '4001', 10);
+const PORT = parseInt(process.env.PORT || '80', 10);
 
 app.use(cors());
 app.use(express.json());
+
+// 请求日志中间件
+// app.use((req, res, next) => {
+//   const params = req.method === 'GET' ? req.query : req.body;
+//   console.log(`[${new Date().toLocaleString('zh-CN')}] ${req.method} ${req.path}`, JSON.stringify(params));
+//   next();
+// });
 
 // 获取分页记录
 app.get('/api/records', (req, res) => {
@@ -15,8 +23,8 @@ app.get('/api/records', (req, res) => {
   const pageSize = parseInt(req.query.pageSize as string) || 10;
   const offset = (page - 1) * pageSize;
 
-  const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC LIMIT ? OFFSET ?').all(pageSize, offset) as Record[];
-  const totalResult = db.prepare('SELECT COUNT(*) as count FROM records').get() as { count: number };
+  const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC, id DESC LIMIT ? OFFSET ?').all(pageSize, offset) as unknown as Record[];
+  const totalResult = db.prepare('SELECT COUNT(*) as count FROM records').get() as unknown as { count: number };
   const total = totalResult.count;
   const totalPages = Math.ceil(total / pageSize);
 
@@ -37,7 +45,7 @@ app.get('/api/stats', (req, res) => {
   const pageSize = parseInt(req.query.pageSize as string) || 7;
   const offset = (page - 1) * pageSize;
 
-  const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC').all() as Record[];
+  const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC, id DESC').all() as unknown as Record[];
   
   // 按日期分组统计
   const statsMap = new Map<string, DailyStats>();
@@ -51,8 +59,8 @@ app.get('/api/stats', (req, res) => {
         date,
         formulaAmount: 0,
         breastmilkAmount: 0,
-        peeCount: 0,
         poopCount: 0,
+        diaperCount: 0,
       };
       statsMap.set(date, stats);
     }
@@ -65,10 +73,11 @@ app.get('/api/stats', (req, res) => {
         stats.breastmilkAmount += record.amount || 0;
         break;
       case 'pee':
-        stats.peeCount += 1;
+        stats.diaperCount += record.diaper ?? 1;
         break;
       case 'poop':
         stats.poopCount += 1;
+        stats.diaperCount += record.diaper ?? 1;
         break;
     }
   });
@@ -92,7 +101,7 @@ app.get('/api/stats', (req, res) => {
 
 // 创建新记录
 app.post('/api/records', (req, res) => {
-  const { type, amount, duration, note, createdAt } = req.body as CreateRecordInput;
+  const { type, amount, duration, diaper, note, createdAt } = req.body as CreateRecordInput;
   
   if (!type) {
     return res.status(400).json({ error: '类型不能为空' });
@@ -104,12 +113,14 @@ app.post('/api/records', (req, res) => {
   }
 
   const stmt = db.prepare(`
-    INSERT INTO records (type, amount, duration, note, createdAt)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO records (type, amount, duration, diaper, note, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
   
-  const result = stmt.run(type, amount || null, duration || null, note || null, createdAt || null);
-  const newRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(result.lastInsertRowid) as Record;
+  const now = new Date();
+  const defaultCreatedAt = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
+  const result = stmt.run(type, amount || null, duration || null, diaper || null, note || null, createdAt || defaultCreatedAt);
+  const newRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(result.lastInsertRowid) as unknown as Record;
   
   res.json(newRecord);
 });
@@ -117,10 +128,10 @@ app.post('/api/records', (req, res) => {
 // 更新记录
 app.put('/api/records/:id', (req, res) => {
   const { id } = req.params;
-  const { amount, duration, note, createdAt } = req.body as Partial<CreateRecordInput>;
+  const { amount, duration, diaper, note, createdAt } = req.body as Partial<CreateRecordInput>;
   
   // 先获取当前记录的类型
-  const currentRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record;
+  const currentRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as unknown as Record;
   
   if (!currentRecord) {
     return res.status(404).json({ error: '记录不存在' });
@@ -133,12 +144,12 @@ app.put('/api/records/:id', (req, res) => {
   
   const stmt = db.prepare(`
     UPDATE records
-    SET amount = ?, duration = ?, note = ?, createdAt = ?
+    SET amount = ?, duration = ?, diaper = ?, note = ?, createdAt = ?
     WHERE id = ?
   `);
   
-  stmt.run(amount || null, duration || null, note || null, createdAt || currentRecord.createdAt, id);
-  const updatedRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record;
+  stmt.run(amount || null, duration || null, diaper || null, note || null, createdAt || currentRecord.createdAt, id);
+  const updatedRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as unknown as Record;
   
   res.json(updatedRecord);
 });
@@ -154,6 +165,14 @@ app.delete('/api/records/:id', (req, res) => {
 app.delete('/api/records', (req, res) => {
   db.prepare('DELETE FROM records').run();
   res.json({ success: true });
+});
+
+// 前端静态文件服务
+const staticPath = path.join(__dirname, 'static');
+app.use(express.static(staticPath));
+// SPA 路由 fallback
+app.get('/{*path}', (req, res) => {
+  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {

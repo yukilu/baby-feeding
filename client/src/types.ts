@@ -5,6 +5,7 @@ export interface FeedingRecord {
   type: RecordType;
   amount?: number;
   duration?: number;
+  diaper?: number;
   note?: string;
   createdAt: string;
 }
@@ -13,6 +14,7 @@ export interface CreateRecordInput {
   type: RecordType;
   amount?: number;
   duration?: number;
+  diaper?: number;
   note?: string;
   createdAt?: string;
 }
@@ -29,6 +31,6 @@ export interface DailyStats {
   date: string;
   formulaAmount: number;
   breastmilkAmount: number;
-  peeCount: number;
   poopCount: number;
+  diaperCount: number;
 }
