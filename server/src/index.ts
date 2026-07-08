@@ -21,8 +21,21 @@ app.use(express.json());
 app.get('/api/records', (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const pageSize = parseInt(req.query.pageSize as string) || 10;
-  const offset = (page - 1) * pageSize;
+  const date = req.query.date as string;
 
+  if (date) {
+    const records = db.prepare('SELECT * FROM records WHERE createdAt LIKE ? ORDER BY createdAt ASC, id ASC').all(`${date}%`) as unknown as Record[];
+    const response: PaginatedResponse<Record> = {
+      data: records,
+      page: 1,
+      pageSize: records.length,
+      total: records.length,
+      totalPages: 1,
+    };
+    return res.json(response);
+  }
+
+  const offset = (page - 1) * pageSize;
   const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC, id DESC LIMIT ? OFFSET ?').all(pageSize, offset) as unknown as Record[];
   const totalResult = db.prepare('SELECT COUNT(*) as count FROM records').get() as unknown as { count: number };
   const total = totalResult.count;
@@ -108,7 +121,7 @@ app.post('/api/records', (req, res) => {
   }
   
   // 奶量是奶粉和母乳的必填字段
-  if ((type === 'formula' || type === 'breastmilk') && !amount) {
+  if ((type === 'formula' || type === 'breastmilk') && (amount === undefined || amount === null)) {
     return res.status(400).json({ error: '奶量不能为空' });
   }
 
@@ -119,7 +132,7 @@ app.post('/api/records', (req, res) => {
   
   const now = new Date();
   const defaultCreatedAt = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
-  const result = stmt.run(type, amount || null, duration || null, diaper || null, note || null, createdAt || defaultCreatedAt);
+  const result = stmt.run(type, amount ?? null, duration ?? null, diaper ?? null, note || null, createdAt || defaultCreatedAt);
   const newRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(result.lastInsertRowid) as unknown as Record;
   
   res.json(newRecord);
@@ -138,7 +151,7 @@ app.put('/api/records/:id', (req, res) => {
   }
   
   // 奶量是奶粉和母乳的必填字段
-  if ((currentRecord.type === 'formula' || currentRecord.type === 'breastmilk') && !amount) {
+  if ((currentRecord.type === 'formula' || currentRecord.type === 'breastmilk') && (amount === undefined || amount === null)) {
     return res.status(400).json({ error: '奶量不能为空' });
   }
   
@@ -148,7 +161,7 @@ app.put('/api/records/:id', (req, res) => {
     WHERE id = ?
   `);
   
-  stmt.run(amount || null, duration || null, diaper || null, note || null, createdAt || currentRecord.createdAt, id);
+  stmt.run(amount ?? null, duration ?? null, diaper ?? null, note || null, createdAt || currentRecord.createdAt, id);
   const updatedRecord = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as unknown as Record;
   
   res.json(updatedRecord);

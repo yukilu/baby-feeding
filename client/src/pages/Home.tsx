@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import type { FeedingRecord, RecordType } from '../types'
@@ -21,17 +21,24 @@ const formatDate = (dateStr: string) => {
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
+// 页面缓存
+const homeCache = { records: [] as FeedingRecord[], scroll: 0, page: 1, totalPages: 0, loaded: false }
+
 export default function Home() {
-  const [records, setRecords] = useState<FeedingRecord[]>([])
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
+  const [records, setRecords] = useState<FeedingRecord[]>(homeCache.records)
   const [showModal, setShowModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FeedingRecord | undefined>()
   const [refreshing, setRefreshing] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
   const touchStartY = useRef(0)
   const isPulling = useRef(false)
   const pullDistanceRef = useRef(0)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const pageRef = useRef(homeCache.page)
+  const totalPagesRef = useRef(homeCache.totalPages)
+  const recordsRef = useRef(records)
+  recordsRef.current = records
 
   const loadRecords = async (currentPage: number = 1) => {
     const response = await api.getRecords(currentPage)
@@ -40,21 +47,51 @@ export default function Home() {
     } else {
       setRecords(prev => [...prev, ...response.data])
     }
-    setTotalPages(response.totalPages)
+    pageRef.current = currentPage
+    totalPagesRef.current = response.totalPages
   }
 
   useEffect(() => {
-    loadRecords(1)
+    if (homeCache.loaded) {
+      window.scrollTo(0, homeCache.scroll)
+    } else {
+      loadRecords(1)
+    }
+    return () => {
+      homeCache.records = recordsRef.current
+      homeCache.scroll = window.scrollY
+      homeCache.page = pageRef.current
+      homeCache.totalPages = totalPagesRef.current
+      homeCache.loaded = true
+    }
   }, [])
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1
-    setPage(nextPage)
-    loadRecords(nextPage)
-  }
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore) return
+    const nextPage = pageRef.current + 1
+    if (nextPage > totalPagesRef.current) return
+    setLoadingMore(true)
+    await loadRecords(nextPage)
+    setLoadingMore(false)
+  }, [loadingMore])
+
+  // 滚动到底部自动加载
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore()
+        }
+      },
+      { rootMargin: '100px' }
+    )
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current)
+    }
+    return () => observer.disconnect()
+  }, [handleLoadMore, records])
 
   const handleRecordUpdated = () => {
-    setPage(1)
     loadRecords(1)
   }
 
@@ -98,7 +135,6 @@ export default function Home() {
         setPullDistance(0)
         pullDistanceRef.current = 0
         await loadRecords(1)
-        setPage(1)
         setRefreshing(false)
       } else {
         setPullDistance(0)
@@ -154,45 +190,47 @@ export default function Home() {
             暂无记录，点击上方"➕"开始记录
           </div>
         ) : (
-          <>
-            <div className="space-y-3">
-              {records.map(record => (
-                <div
-                  key={record.id}
-                  onClick={() => handleEdit(record)}
-                  className="bg-gray-50 rounded-xl p-4 border border-gray-100 cursor-pointer hover:border-purple-300 hover:bg-gray-100 transition"
-                >
-                  {/* 时间 */}
-                  <div className="text-sm text-gray-500 mb-2">{formatDate(record.createdAt)}</div>
-                  
-                  {/* 主内容 */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg">
-                      <span className="inline-block w-8">{typeLabels[record.type].split(' ')[0]}</span>
-                      {typeLabels[record.type].split(' ')[1]}
-                    </span>
-                    {record.type === 'formula' && record.amount && (
-                      <span className="font-medium text-blue-600">{record.amount}mL</span>
-                    )}
-                    {record.type === 'breastmilk' && record.amount && (
-                      <span className="font-medium text-blue-600">{record.amount}mL</span>
-                    )}
-                  </div>
-                  
-                  {/* 备注 */}
-                  {record.note && <div className="text-xs text-gray-500 mt-2">{record.note}</div>}
-                </div>
-              ))}
-            </div>
-            {page < totalPages && (
-              <button
-                onClick={handleLoadMore}
-                className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
+          <div className="space-y-3">
+            {records.map(record => (
+              <div
+                key={record.id}
+                onClick={() => handleEdit(record)}
+                className="bg-gray-50 rounded-xl p-4 border border-gray-100 cursor-pointer hover:border-purple-300 hover:bg-gray-100 transition"
               >
-                加载更多
-              </button>
+                {/* 时间 */}
+                <div className="text-sm text-gray-500 mb-2">{formatDate(record.createdAt)}</div>
+                
+                {/* 主内容 */}
+                <div className="flex justify-between items-center">
+                  <span className="text-lg">
+                    <span className="inline-block w-8">{typeLabels[record.type].split(' ')[0]}</span>
+                    {typeLabels[record.type].split(' ')[1]}
+                  </span>
+                  {record.type === 'formula' && record.amount ? (
+                    <span className="font-medium text-blue-600">{record.amount}mL</span>
+                  ) : null}
+                  {record.type === 'breastmilk' && (record.amount || record.duration) ? (
+                    <span className="font-medium">
+                      {record.duration ? <span className="text-teal-600">{record.duration}min</span> : null}
+                      {record.amount && record.duration ? ' ' : ''}
+                      {record.amount ? <span className="text-blue-600">{record.amount}mL</span> : null}
+                    </span>
+                  ) : null}
+                  {(record.type === 'pee' || record.type === 'poop') && record.diaper ? (
+                    <span className="font-medium text-green-600">{record.diaper}片</span>
+                  ) : null}
+                </div>
+                
+                {/* 备注 */}
+                {record.note && <div className="text-xs text-gray-500 mt-2">{record.note}</div>}
+              </div>
+            ))}
+            {/* 滚动哨兵 */}
+            <div ref={sentinelRef} className="h-1" />
+            {loadingMore && (
+              <div className="text-center py-3 text-gray-500 text-sm">加载中...</div>
             )}
-          </>
+          </div>
         )}
       </div>
 

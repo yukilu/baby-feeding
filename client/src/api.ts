@@ -8,6 +8,12 @@ export const api = {
     return res.json();
   },
 
+  async getRecordsByDate(date: string): Promise<FeedingRecord[]> {
+    const res = await fetch(`${API_BASE}/records?date=${date}`);
+    const data = await res.json();
+    return data.data;
+  },
+
   async getStats(page: number = 1, pageSize: number = 7): Promise<PaginatedResponse<DailyStats>> {
     const res = await fetch(`${API_BASE}/stats?page=${page}&pageSize=${pageSize}`);
     return res.json();

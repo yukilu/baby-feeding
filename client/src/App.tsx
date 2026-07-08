@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Stats from './pages/Stats'
+import DailyRecords from './pages/DailyRecords'
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/stats/:date" element={<DailyRecords />} />
       </Routes>
     </div>
   )

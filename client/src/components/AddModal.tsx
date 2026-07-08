@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../api'
 import type { FeedingRecord, RecordType } from '../types'
 
@@ -47,6 +47,17 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // 新增时获取最新记录的时间作为默认值
+  useEffect(() => {
+    if (!isEdit) {
+      api.getRecords(1, 1).then(response => {
+        if (response.data.length > 0) {
+          setCreatedAt(toDateTimeLocal(response.data[0].createdAt))
+        }
+      })
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -54,18 +65,18 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
     try {
       if (isEdit) {
         await api.updateRecord(record.id, {
-          amount: amount ? parseInt(amount) : undefined,
-          duration: duration ? parseInt(duration) : undefined,
-          diaper: diaper ? parseInt(diaper) : undefined,
+          amount: amount !== '' ? parseInt(amount) : undefined,
+          duration: duration !== '' ? parseInt(duration) : undefined,
+          diaper: diaper !== '' ? parseInt(diaper) : undefined,
           note: note || undefined,
           createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
       } else {
         await api.createRecord({
           type: selectedType,
-          amount: amount ? parseInt(amount) : undefined,
-          duration: duration ? parseInt(duration) : undefined,
-          diaper: diaper ? parseInt(diaper) : undefined,
+          amount: amount !== '' ? parseInt(amount) : undefined,
+          duration: duration !== '' ? parseInt(duration) : undefined,
+          diaper: diaper !== '' ? parseInt(diaper) : undefined,
           note: note || undefined,
           createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
@@ -173,7 +184,7 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    placeholder="请输入时长"
+                    placeholder="请输入时长（单位分钟）"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
