@@ -3,8 +3,10 @@ import type { FeedingRecord, CreateRecordInput, PaginatedResponse, DailyStats } 
 const API_BASE = '/api';
 
 export const api = {
-  async getRecords(page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<FeedingRecord>> {
-    const res = await fetch(`${API_BASE}/records?page=${page}&pageSize=${pageSize}`);
+  async getRecords(page: number = 1, pageSize: number = 10, type?: string): Promise<PaginatedResponse<FeedingRecord>> {
+    let url = `${API_BASE}/records?page=${page}&pageSize=${pageSize}`;
+    if (type) url += `&type=${type}`;
+    const res = await fetch(url);
     return res.json();
   },
 

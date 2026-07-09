@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { api } from '../api'
 import type { FeedingRecord, RecordType } from '../types'
 
@@ -47,20 +47,9 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // 新增时获取最新记录的时间作为默认值
-  useEffect(() => {
-    if (!isEdit) {
-      api.getRecords(1, 1).then(response => {
-        if (response.data.length > 0) {
-          setCreatedAt(toDateTimeLocal(response.data[0].createdAt))
-        }
-      })
-    }
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     setLoading(true)
     try {
       if (isEdit) {
@@ -153,17 +142,28 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
               />
             </div>
             {selectedType === 'formula' && (
-              <div className="flex items-center mb-3">
-                <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="请输入奶量"
-                  required
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+              <>
+                <div className="flex items-center mb-3">
+                  <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="请输入奶量"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="flex items-center mb-3">
+                  <label className="text-xs font-medium text-gray-700 shrink-0">时长：</label>
+                  <input
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="请输入时长（分钟）"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </>
             )}
             {selectedType === 'breastmilk' && (
               <>
@@ -174,7 +174,6 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="请输入奶量"
-                    required
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -184,7 +183,7 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    placeholder="请输入时长（单位分钟）"
+                    placeholder="请输入时长（分钟）"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>

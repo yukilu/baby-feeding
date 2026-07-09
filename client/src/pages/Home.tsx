@@ -167,12 +167,18 @@ export default function Home() {
 
       {/* 头部 - 固定吸顶 */}
       <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 shadow-md">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Link
             to="/stats"
             className="bg-white/20 backdrop-blur rounded-lg p-3 text-center hover:bg-white/30 transition"
           >
             <div className="text-xl">📊</div>
+          </Link>
+          <Link
+            to="/poop"
+            className="bg-white/20 backdrop-blur rounded-lg p-3 text-center hover:bg-white/30 transition"
+          >
+            <div className="text-xl">💩</div>
           </Link>
           <button
             onClick={handleAdd}
@@ -206,13 +212,9 @@ export default function Home() {
                     <span className="inline-block w-8">{typeLabels[record.type].split(' ')[0]}</span>
                     {typeLabels[record.type].split(' ')[1]}
                   </span>
-                  {record.type === 'formula' && record.amount ? (
-                    <span className="font-medium text-blue-600">{record.amount}mL</span>
-                  ) : null}
-                  {record.type === 'breastmilk' && (record.amount || record.duration) ? (
-                    <span className="font-medium">
+                  {(record.type === 'formula' || record.type === 'breastmilk') && (record.amount || record.duration) ? (
+                    <span className="font-medium flex items-center gap-2">
                       {record.duration ? <span className="text-teal-600">{record.duration}min</span> : null}
-                      {record.amount && record.duration ? ' ' : ''}
                       {record.amount ? <span className="text-blue-600">{record.amount}mL</span> : null}
                     </span>
                   ) : null}

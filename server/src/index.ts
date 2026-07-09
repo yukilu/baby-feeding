@@ -22,15 +22,37 @@ app.get('/api/records', (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const pageSize = parseInt(req.query.pageSize as string) || 10;
   const date = req.query.date as string;
+  const type = req.query.type as string;
 
   if (date) {
-    const records = db.prepare('SELECT * FROM records WHERE createdAt LIKE ? ORDER BY createdAt ASC, id ASC').all(`${date}%`) as unknown as Record[];
+    let records: Record[];
+    if (type) {
+      records = db.prepare('SELECT * FROM records WHERE createdAt LIKE ? AND type = ? ORDER BY createdAt ASC, id ASC').all(`${date}%`, type) as unknown as Record[];
+    } else {
+      records = db.prepare('SELECT * FROM records WHERE createdAt LIKE ? ORDER BY createdAt ASC, id ASC').all(`${date}%`) as unknown as Record[];
+    }
     const response: PaginatedResponse<Record> = {
       data: records,
       page: 1,
       pageSize: records.length,
       total: records.length,
       totalPages: 1,
+    };
+    return res.json(response);
+  }
+
+  if (type) {
+    const offset = (page - 1) * pageSize;
+    const records = db.prepare('SELECT * FROM records WHERE type = ? ORDER BY createdAt DESC, id DESC LIMIT ? OFFSET ?').all(type, pageSize, offset) as unknown as Record[];
+    const totalResult = db.prepare('SELECT COUNT(*) as count FROM records WHERE type = ?').get(type) as unknown as { count: number };
+    const total = totalResult.count;
+    const totalPages = Math.ceil(total / pageSize);
+    const response: PaginatedResponse<Record> = {
+      data: records,
+      page,
+      pageSize,
+      total,
+      totalPages,
     };
     return res.json(response);
   }
@@ -119,11 +141,6 @@ app.post('/api/records', (req, res) => {
   if (!type) {
     return res.status(400).json({ error: '类型不能为空' });
   }
-  
-  // 奶量是奶粉和母乳的必填字段
-  if ((type === 'formula' || type === 'breastmilk') && (amount === undefined || amount === null)) {
-    return res.status(400).json({ error: '奶量不能为空' });
-  }
 
   const stmt = db.prepare(`
     INSERT INTO records (type, amount, duration, diaper, note, createdAt)
@@ -148,11 +165,6 @@ app.put('/api/records/:id', (req, res) => {
   
   if (!currentRecord) {
     return res.status(404).json({ error: '记录不存在' });
-  }
-  
-  // 奶量是奶粉和母乳的必填字段
-  if ((currentRecord.type === 'formula' || currentRecord.type === 'breastmilk') && (amount === undefined || amount === null)) {
-    return res.status(400).json({ error: '奶量不能为空' });
   }
   
   const stmt = db.prepare(`

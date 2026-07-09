@@ -80,13 +80,9 @@ export default function DailyRecords() {
                     <span className="inline-block w-8">{typeLabels[record.type].split(' ')[0]}</span>
                     {typeLabels[record.type].split(' ')[1]}
                   </span>
-                  {record.type === 'formula' && record.amount ? (
-                    <span className="font-medium text-blue-600">{record.amount}mL</span>
-                  ) : null}
-                  {record.type === 'breastmilk' && (record.amount || record.duration) ? (
-                    <span className="font-medium">
+                  {(record.type === 'formula' || record.type === 'breastmilk') && (record.amount || record.duration) ? (
+                    <span className="font-medium flex items-center gap-2">
                       {record.duration ? <span className="text-teal-600">{record.duration}min</span> : null}
-                      {record.amount && record.duration ? ' ' : ''}
                       {record.amount ? <span className="text-blue-600">{record.amount}mL</span> : null}
                     </span>
                   ) : null}
