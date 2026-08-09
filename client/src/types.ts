@@ -31,6 +31,6 @@ export interface DailyStats {
   date: string;
   formulaAmount: number;
   breastmilkAmount: number;
+  breastmilkDuration: number;
   poopCount: number;
-  diaperCount: number;
 }

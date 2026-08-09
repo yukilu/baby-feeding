@@ -16,8 +16,11 @@ export const api = {
     return data.data;
   },
 
-  async getStats(page: number = 1, pageSize: number = 7): Promise<PaginatedResponse<DailyStats>> {
-    const res = await fetch(`${API_BASE}/stats?page=${page}&pageSize=${pageSize}`);
+  async getStats(page: number = 1, pageSize: number = 7, startDate?: string, endDate?: string): Promise<PaginatedResponse<DailyStats>> {
+    let url = `${API_BASE}/stats?page=${page}&pageSize=${pageSize}`;
+    if (startDate) url += `&startDate=${startDate}`;
+    if (endDate) url += `&endDate=${endDate}`;
+    const res = await fetch(url);
     return res.json();
   },
 

@@ -78,9 +78,19 @@ app.get('/api/records', (req, res) => {
 app.get('/api/stats', (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const pageSize = parseInt(req.query.pageSize as string) || 7;
+  const startDate = req.query.startDate as string;
+  const endDate = req.query.endDate as string;
   const offset = (page - 1) * pageSize;
 
-  const records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC, id DESC').all() as unknown as Record[];
+  let records = db.prepare('SELECT * FROM records ORDER BY createdAt DESC, id DESC').all() as unknown as Record[];
+  
+  // 按日期范围筛选
+  if (startDate) {
+    records = records.filter(r => r.createdAt.split(' ')[0] >= startDate);
+  }
+  if (endDate) {
+    records = records.filter(r => r.createdAt.split(' ')[0] <= endDate);
+  }
   
   // 按日期分组统计
   const statsMap = new Map<string, DailyStats>();
@@ -94,8 +104,8 @@ app.get('/api/stats', (req, res) => {
         date,
         formulaAmount: 0,
         breastmilkAmount: 0,
+        breastmilkDuration: 0,
         poopCount: 0,
-        diaperCount: 0,
       };
       statsMap.set(date, stats);
     }
@@ -106,13 +116,10 @@ app.get('/api/stats', (req, res) => {
         break;
       case 'breastmilk':
         stats.breastmilkAmount += record.amount || 0;
-        break;
-      case 'pee':
-        stats.diaperCount += record.diaper ?? 1;
+        stats.breastmilkDuration += record.duration || 0;
         break;
       case 'poop':
         stats.poopCount += 1;
-        stats.diaperCount += record.diaper ?? 1;
         break;
     }
   });

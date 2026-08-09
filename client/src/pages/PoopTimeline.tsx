@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import type { FeedingRecord } from '../types'
 import AddModal from '../components/AddModal'
@@ -26,6 +26,7 @@ const formatTimelineDate = (dateStr: string) => {
 const poopCache = { records: [] as FeedingRecord[], scroll: 0, page: 1, totalPages: 0, loaded: false }
 
 export default function PoopTimeline() {
+  const navigate = useNavigate()
   const [records, setRecords] = useState<FeedingRecord[]>(poopCache.records)
   const [showModal, setShowModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FeedingRecord | undefined>()
@@ -164,11 +165,11 @@ export default function PoopTimeline() {
       {/* 头部 */}
       <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 shadow-md">
         <div className="flex items-center">
-          <Link to="/" className="mr-3 hover:opacity-80">
+          <button onClick={() => navigate(-1)} className="mr-3 hover:opacity-80">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </Link>
+          </button>
           <h1 className="text-xl font-bold">💩 大便记录</h1>
         </div>
       </div>

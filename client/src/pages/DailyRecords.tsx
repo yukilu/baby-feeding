@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import type { FeedingRecord, RecordType } from '../types'
 import AddModal from '../components/AddModal'
@@ -24,6 +24,7 @@ const formatTitle = (date: string) => {
 }
 
 export default function DailyRecords() {
+  const navigate = useNavigate()
   const { date } = useParams<{ date: string }>()
   const [records, setRecords] = useState<FeedingRecord[]>([])
   const [showModal, setShowModal] = useState(false)
@@ -53,11 +54,11 @@ export default function DailyRecords() {
       {/* 头部 */}
       <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 shadow-md">
         <div className="flex items-center">
-          <Link to="/stats" className="mr-3 hover:opacity-80">
+          <button onClick={() => navigate(-1)} className="mr-3 hover:opacity-80">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </Link>
+          </button>
           <h1 className="text-lg font-bold">{date ? formatTitle(date) : ''}</h1>
         </div>
       </div>
