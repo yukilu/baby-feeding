@@ -1,11 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import db from './db';
 import type { Record, CreateRecordInput, PaginatedResponse, DailyStats } from './types';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '80', 10);
+const PORT = parseInt(process.env.PORT || '3003', 10);
 
 app.use(cors());
 app.use(express.json());
@@ -197,14 +196,6 @@ app.delete('/api/records/:id', (req, res) => {
 app.delete('/api/records', (req, res) => {
   db.prepare('DELETE FROM records').run();
   res.json({ success: true });
-});
-
-// 前端静态文件服务
-const staticPath = path.join(__dirname, 'static');
-app.use(express.static(staticPath));
-// SPA 路由 fallback
-app.get('/{*path}', (req, res) => {
-  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
