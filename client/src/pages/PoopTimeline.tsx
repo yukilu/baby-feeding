@@ -218,9 +218,6 @@ export default function PoopTimeline() {
                   >
                     <div className="flex items-baseline gap-2">
                       <span className={`text-base font-semibold ${colorConfig.text}`}>{label} {time}</span>
-                      {record.diaper ? (
-                        <span className="text-sm text-green-600">{record.diaper}片</span>
-                      ) : null}
                     </div>
                     {/* 最新一条显示距现在的时间 */}
                     {index === 0 && (() => {

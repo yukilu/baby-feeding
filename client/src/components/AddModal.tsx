@@ -9,6 +9,14 @@ const typeLabels: Record<RecordType, string> = {
   poop: '💩 大便',
 }
 
+// 添加记录时可选的类型（母乳/尿尿暂时隐藏，历史数据仍正常展示和编辑）
+const addableTypes: RecordType[] = [
+  // 'breastmilk',
+  'formula',
+  // 'pee',
+  'poop',
+]
+
 interface AddModalProps {
   record?: FeedingRecord
   onClose: () => void
@@ -38,10 +46,9 @@ const getNowDateTimeLocal = () => {
 
 export default function AddModal({ record, onClose, onRecordUpdated }: AddModalProps) {
   const isEdit = !!record
-  const [selectedType, setSelectedType] = useState<RecordType>(record?.type || 'breastmilk')
+  const [selectedType, setSelectedType] = useState<RecordType>(record?.type || 'formula')
   const [amount, setAmount] = useState(record?.amount?.toString() || '')
   const [duration, setDuration] = useState(record?.duration?.toString() || '')
-  const [diaper, setDiaper] = useState(record?.diaper?.toString() || '')
   const [note, setNote] = useState(record?.note || '')
   const [createdAt, setCreatedAt] = useState(record?.createdAt ? toDateTimeLocal(record.createdAt) : getNowDateTimeLocal())
   const [loading, setLoading] = useState(false)
@@ -56,7 +63,8 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
         await api.updateRecord(record.id, {
           amount: amount !== '' ? parseInt(amount) : undefined,
           duration: duration !== '' ? parseInt(duration) : undefined,
-          diaper: diaper !== '' ? parseInt(diaper) : undefined,
+          // 界面已不填写尿不湿，透传原值避免被服务端置空
+          diaper: record?.diaper,
           note: note || undefined,
           createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
@@ -65,7 +73,6 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
           type: selectedType,
           amount: amount !== '' ? parseInt(amount) : undefined,
           duration: duration !== '' ? parseInt(duration) : undefined,
-          diaper: diaper !== '' ? parseInt(diaper) : undefined,
           note: note || undefined,
           createdAt: createdAt ? toDbFormat(createdAt) : undefined,
         })
@@ -109,19 +116,19 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
         {/* 类型选择 - 仅添加时可编辑 */}
         {!isEdit && (
         <div className="p-4">
-          <div className="grid gap-2 grid-cols-4">
-            {(Object.entries(typeLabels) as [RecordType, string][]).map(([type, label]) => (
+          <div className="flex justify-evenly">
+            {addableTypes.map((type) => (
               <button
                 key={type}
                 onClick={() => setSelectedType(type)}
-                className={`p-2 rounded-lg border-2 text-center transition ${
+                className={`w-[calc(25%_-_6px)] p-2 rounded-lg border-2 text-center transition ${
                   selectedType === type
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="text-base mb-0.5">{label.split(' ')[0]}</div>
-                <div className="text-xs">{label.split(' ')[1]}</div>
+                <div className="text-base mb-0.5">{typeLabels[type].split(' ')[0]}</div>
+                <div className="text-xs">{typeLabels[type].split(' ')[1]}</div>
               </button>
             ))}
           </div>
@@ -142,28 +149,16 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
               />
             </div>
             {selectedType === 'formula' && (
-              <>
-                <div className="flex items-center mb-3">
-                  <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="请输入奶量"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                <div className="flex items-center mb-3">
-                  <label className="text-xs font-medium text-gray-700 shrink-0">时长：</label>
-                  <input
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="请输入时长（分钟）"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-              </>
+              <div className="flex items-center mb-3">
+                <label className="text-xs font-medium text-gray-700 shrink-0">奶量：</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="请输入奶量"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
             )}
             {selectedType === 'breastmilk' && (
               <>
@@ -188,18 +183,6 @@ export default function AddModal({ record, onClose, onRecordUpdated }: AddModalP
                   />
                 </div>
               </>
-            )}
-            {(selectedType === 'pee' || selectedType === 'poop') && (
-              <div className="flex items-center mb-3">
-                <label className="text-xs font-medium text-gray-700 shrink-0">尿不湿：</label>
-                <input
-                  type="number"
-                  value={diaper}
-                  onChange={(e) => setDiaper(e.target.value)}
-                  placeholder="默认1片"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
             )}
             <div className="flex items-center mb-4">
               <label className="text-xs font-medium text-gray-700 shrink-0">备注：</label>

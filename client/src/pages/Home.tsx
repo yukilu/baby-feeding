@@ -218,9 +218,6 @@ export default function Home() {
                       {record.amount ? <span className="text-blue-600">{record.amount}mL</span> : null}
                     </span>
                   ) : null}
-                  {(record.type === 'pee' || record.type === 'poop') && record.diaper ? (
-                    <span className="font-medium text-green-600">{record.diaper}片</span>
-                  ) : null}
                 </div>
                 
                 {/* 备注 */}
